@@ -2,7 +2,7 @@
 
 > 这是一个基于 WebGL (Three.js) 与 Cannon.js 驱动的纯前端 3D 掷骰子引擎。单文件（Single-file）架构，零打包依赖，开箱即用。完美适用于桌面端跑团（TTRPG）、互动游戏以及**企业游戏化学习管理系统（LMS）**中的随机化任务调度。
 
-**🔗 [点击这里体验在线 Demo](https://[你的用户名].github.io/[你的仓库名]/)**
+**🔗 [点击这里体验在线 Demo](https://WANGGX-Gex.github.io/[你的仓库名]/)**
 
 ---
 
@@ -40,7 +40,7 @@
 
 ## 👨‍💻 制作名单 (Credits)
 
-* **Designed & Engineered by:** [@WANGGX](https://github.com/你的GitHub用户名)
+* **Designed & Engineered by:** [@WANGGX](https://github.com/WANGGX-Gex)
 * **Special Thanks:** 感谢好友 **@fonk** 与 **@bhonny** 在项目开发过程中提供的无私技术辅导与情绪支持！
 
 ## 📄 开源协议 (License)
