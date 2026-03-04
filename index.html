@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D 物理骰子 By WANGGX</title>
+  <style>
+  body { margin: 0; overflow: hidden; background-color: #0d0e15; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    
+    /* 左侧：骰子选择面板 */
+    #sidebar {
+      position: absolute; left: 20px; top: 20px; width: 260px;
+      background: rgba(20, 22, 35, 0.85); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px;
+      padding: 20px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5); z-index: 10;
+    }
+    .panel-title { color: #f5d061; text-align: center; font-size: 1.2rem; font-weight: bold; margin-bottom: 20px; text-shadow: 0 0 10px rgba(245, 208, 97, 0.3); }
+    
+    .dice-row { display: flex; justify-content: space-between; align-items: center; background: rgba(30, 32, 45, 0.8); margin-bottom: 10px; padding: 8px 15px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05); }
+    .dice-label { font-weight: bold; font-size: 1.1rem; width: 50px; }
+    
+    /* 骰子专属颜色 */
+    .color-d2 { color: #FFD700; } .color-d4 { color: #5bc0eb; } .color-d6 { color: #f25f5c; } 
+    .color-d8 { color: #9bc53d; } .color-d10 { color: #f8961e; } .color-d12 { color: #c34271; } 
+    .color-d20 { color: #ef476f; } .color-d100 { color: #ffd166; }
+    
+    .counter-ctrl { display: flex; align-items: center; gap: 12px; }
+    .btn-icon { background: #3a3f58; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+    .btn-icon:hover { background: #4a5070; }
+
+    /* 新增：按钮禁用的暗化视觉效果 */
+    .btn-icon:disabled { background: #2a2d40; color: #5a5f7a; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-icon:disabled:hover { background: #2a2d40; }
+    .count-val { color: white; font-weight: bold; width: 20px; text-align: center; }
+
+    .action-btn { width: 100%; padding: 12px; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; border: none; margin-top: 10px; transition: 0.2s; }
+    #btn-roll { background: linear-gradient(135deg, #f9a826, #f25f5c); color: white; box-shadow: 0 4px 15px rgba(242, 95, 92, 0.4); }
+    #btn-roll:hover { opacity: 0.9; transform: translateY(-1px); }
+    #btn-clear { background: transparent; color: #a0a5bc; border: 1px solid #4a5070; margin-top: 10px; }
+    #btn-clear:hover { background: rgba(255, 255, 255, 0.05); color: white; }
+
+    /* 右侧：结果面板 */
+    #result-panel {
+      position: absolute; right: 20px; top: 20px; width: 240px;
+      background: rgba(20, 22, 35, 0.85); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px;
+      padding: 20px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5); z-index: 10;
+      display: none; 
+    }
+    .result-group { margin-bottom: 15px; }
+    .result-group-title { font-weight: bold; margin-bottom: 8px; font-size: 1.1rem; }
+    .result-boxes { display: flex; flex-wrap: wrap; gap: 8px; }
+    .res-box { background: rgba(255,255,255,0.1); color: white; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 1.1rem; }
+    
+    .total-divider { border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 20px 0 10px 0; }
+    .total-title { color: #a0a5bc; text-align: center; font-size: 0.9rem; margin-bottom: 5px; }
+    .total-val { color: #f5d061; text-align: center; font-size: 2.5rem; font-weight: bold; text-shadow: 0 0 20px rgba(245, 208, 97, 0.4); }
+  
+    /* ========================================== */
+    /* 说明与致谢弹窗样式 (About Modal) */
+    /* ========================================== */
+    .about-btn { position: absolute; bottom: 20px; right: 20px; width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.05); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.15); color: #a0a5bc; font-size: 1.1rem; font-family: serif; font-style: italic; cursor: pointer; z-index: 5; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+    .about-btn:hover { background: rgba(255,255,255,0.15); color: #fff; transform: scale(1.1); }
+    
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 100; display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s; }
+    .modal-overlay.show { display: flex; opacity: 1; }
+    
+    .modal-content { background: #141623; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 30px; max-width: 340px; width: 85%; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.5); transform: translateY(20px); transition: transform 0.3s; }
+    .modal-overlay.show .modal-content { transform: translateY(0); }
+    
+    .modal-title { margin: 0 0 15px 0; color: #f5d061; font-size: 1.3rem; }
+    /* 专属主创署名样式 */
+    .modal-author { color: #a0a5bc; font-size: 0.85rem; margin-bottom: 15px; letter-spacing: 1px; text-transform: uppercase; font-family: monospace; }
+    .highlight-author { color: #f9a826; font-weight: bold; font-size: 1.1rem; font-family: -apple-system, sans-serif; text-transform: none; text-shadow: 0 0 10px rgba(249, 168, 38, 0.4); }
+    .modal-text { color: #a0a5bc; font-size: 0.95rem; line-height: 1.6; margin-bottom: 0; }
+    .modal-divider { border-top: 1px solid rgba(255,255,255,0.1); margin: 20px 0; }
+    .modal-thanks { color: #fff; font-weight: bold; margin-bottom: 10px; font-size: 1.1rem; letter-spacing: 2px;}
+    .credits-names { margin: 15px 0 25px 0; display: flex; justify-content: center; gap: 20px;}
+    .highlight { color: #1E90FF; font-weight: bold; font-size: 1.1rem; background: rgba(30, 144, 255, 0.1); padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(30, 144, 255, 0.2); }
+    
+    .modal-close-btn { background: #3a3f58; color: white; border: none; padding: 10px 40px; border-radius: 8px; font-size: 1rem; cursor: pointer; transition: 0.2s; font-weight: bold; }
+    .modal-close-btn:hover { background: #4a5070; }
+
+    /* ========================================== */
+    /* 跨端通用基础类 */
+    /* ========================================== */
+    .mobile-only { display: none; }
+    .panel-header { display: flex; justify-content: center; align-items: center; position: relative; }
+
+    /* ========================================== */
+    /* 移动端响应式布局 (Mobile Responsive) */
+    /* ========================================== */
+    @media (max-width: 768px) {
+      .mobile-only { display: block; }
+
+      /* 【新增】：将致谢按钮移动到移动端右上角 */
+      .about-btn { top: 20px; right: 20px; bottom: auto; }
+      
+      /* 1. 左侧面板变身：底部滑动抽屉 (Bottom Sheet) */
+      #sidebar {
+        left: 0; bottom: 0; top: auto; width: 100%;
+        border-radius: 24px 24px 0 0; border-left: none; border-right: none; border-bottom: none;
+        padding: 15px 20px 25px 20px; box-sizing: border-box;
+        display: flex; flex-direction: column;
+        max-height: 85vh; 
+      }
+      
+      .panel-header { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; }
+      .panel-title { margin-bottom: 0; font-size: 1.1rem; }
+      #mobile-toggle-icon { position: absolute; right: 0; color: #a0a5bc; font-size: 0.9rem; font-weight: bold; }
+      
+      /* 骰子列表：加入高度动画 */
+      #dice-list {
+        overflow-y: auto; padding-right: 5px; margin-bottom: 10px;
+        display: grid; grid-template-columns: 1fr 1fr; gap: 8px 15px;
+        transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s, margin 0.3s;
+        max-height: 50vh; 
+        opacity: 1;
+      }
+      
+      #sidebar.collapsed #dice-list {
+        max-height: 0;
+        margin-bottom: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        opacity: 0;
+        overflow: hidden; 
+      }
+      
+      .dice-row { margin-bottom: 0; padding: 4px 8px; }
+      .action-btn { margin-top: 5px; padding: 10px; flex-shrink: 0; } 
+      
+      /* 2. 右侧面板变身：顶部悬浮框 (弹性重排版) */
+      #result-panel {
+        left: 50%; top: 15px; right: auto; transform: translateX(-50%); width: 90%;
+        display: flex; flex-direction: column; align-items: center; padding: 15px;
+        /* 解除整体的高度死板限制，交由内部明细去动态控制 */
+        max-height: none; 
+      }
+      .panel-title, .total-divider { display: none; } 
+      
+      /* 总和部分：固定在最上方 (Order 1 & 2) */
+      .total-title { order: 1; font-size: 1rem; margin-bottom: 0; }
+      #result-total { order: 2; font-size: 3.8rem; margin-top: -5px; line-height: 1; margin-bottom: 5px; }
+      
+      /* 详情明细区：位于总和下方 (Order 3)，限制高度，支持内部滚动 */
+      #result-breakdown { 
+        order: 3; 
+        width: 100%; 
+        display: none; 
+        margin-top: 10px; 
+        margin-bottom: 15px;
+        max-height: 35vh; /* 核心：限制最大高度不超过屏幕的 35% */
+        overflow-y: auto; /* 核心：超出则出现内部原生滑动条 */
+        padding-right: 5px; /* 为滑动条留出呼吸空间 */
+      }
+      #result-panel.show-details #result-breakdown { display: block; }
+      
+      /* 展开/收起开关：固定在面板最底部 (Order 4) */
+      #mobile-details-toggle { 
+        order: 4; 
+        color: #a0a5bc; 
+        padding: 8px 20px; 
+        background: rgba(255,255,255,0.1); 
+        border-radius: 15px; 
+        font-size: 0.9rem; 
+        cursor: pointer; 
+      }
+    }
+
+  </style>
+</head>
+<body>
+  <button id="btn-about" class="about-btn" onclick="toggleAboutModal(true)">i</button>
+
+  <div id="about-modal" class="modal-overlay" onclick="if(event.target === this) toggleAboutModal(false)">
+    <div class="modal-content">
+      <h2 class="modal-title" style="margin-bottom: 5px;">🎲 关于 3D 物理骰子</h2>
+      
+      <div class="modal-author">Designed by <span class="highlight-author">@WANGGX</span></div>
+      
+      <p class="modal-text">这是一个基于 WebGL 与 Cannon.js 驱动的纯前端 3D 掷骰子引擎。它具备严密的物理防穿透、高精度的多面体 UV 映射，以及媲美原生 App 的多端适配体验，完美适用于游戏化场景与桌面互动。</p>
+      
+      <div class="modal-divider"></div>
+      
+      <p class="modal-thanks">✨ 特别鸣谢 ✨</p>
+      <p class="modal-text">本程序的诞生离不开以下两位好友的<br>耐心的技术辅导与不懈的情绪支持：</p>
+      <div class="credits-names">
+        <span class="highlight">@fonk</span>
+        <span class="highlight">@bhonny</span>
+      </div>
+      
+      <button class="modal-close-btn" onclick="toggleAboutModal(false)">关闭</button>
+    </div>
+  </div>
+
+  <div id="sidebar">
+    <div class="panel-header" onclick="toggleMobileSidebar()">
+      <div class="panel-title">骰子选择</div>
+      <div id="mobile-toggle-icon" class="mobile-only">▼ 收起面板</div>
+    </div>
+    <div id="dice-list"></div>
+    <button id="btn-roll" class="action-btn">🎲 掷骰子</button>
+    <button id="btn-clear" class="action-btn">清空骰子</button>
+  </div>
+
+  <div id="result-panel">
+    <div class="panel-title">掷骰结果</div>
+    <div id="result-breakdown"></div>
+    <div class="total-divider"></div>
+    <div class="total-title">总和</div>
+    <div id="result-total" class="total-val">0</div>
+    <div id="mobile-details-toggle" class="mobile-only" onclick="toggleResultDetails()">查看详情 ▼</div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
+
+  <script>
+    // 1. 初始化物理世界
+    const world = new CANNON.World();
+    world.gravity.set(0, -30, 0);
+    world.broadphase = new CANNON.NaiveBroadphase();
+    world.solver.iterations = 30; // 提高迭代次数
+    world.allowSleep = true; // 允许刚体休眠，极大提升稳定性
+
+    const physicsMaterial = new CANNON.Material("standard");
+    const contactMaterial = new CANNON.ContactMaterial(
+      physicsMaterial, physicsMaterial,
+      { friction: 0.4, restitution: 0.5 } 
+    );
+    world.addContactMaterial(contactMaterial);
+
+    // 2. 初始化渲染世界
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x050505);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 28, 20);
+    camera.lookAt(0, 0, 0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.0;
+    document.body.appendChild(renderer.domElement);
+
+    // 生成环境贴图 (拉丝金属反射感)
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    pmremGenerator.compileEquirectangularShader();
+    const envScene = new THREE.Scene();
+    envScene.background = new THREE.Color(0x444444);
+    const envLight1 = new THREE.DirectionalLight(0xffffff, 3);
+    envLight1.position.set(5, 5, 5);
+    envScene.add(envLight1);
+    const envLight2 = new THREE.DirectionalLight(0xffaa55, 2);
+    envLight2.position.set(-5, -5, -5);
+    envScene.add(envLight2);
+    scene.environment = pmremGenerator.fromScene(envScene).texture;
+
+    // 3. 光影增强
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    dirLight.position.set(10, 25, 15);
+    dirLight.castShadow = true;
+    dirLight.shadow.camera.left = -15;
+    dirLight.shadow.camera.right = 15;
+    dirLight.shadow.camera.top = 15;
+    dirLight.shadow.camera.bottom = -15;
+    dirLight.shadow.mapSize.width = 2048;
+    dirLight.shadow.mapSize.height = 2048;
+    dirLight.shadow.bias = -0.0001; // 修复阴影条纹
+    scene.add(dirLight);
+
+    const pointLight = new THREE.PointLight(0xffaa55, 0.5, 50);
+    pointLight.position.set(0, 10, 0);
+    scene.add(pointLight);
+
+    // 4. 创建骰盘与物理边界
+    const trayRadius = 12;
+    const diceSize = 1.2;
+    const wallThickness = 2;
+    const visualWallHeight = 2;
+    const invisibleWallHeight = 15;
+
+    const velvetMaterial = new THREE.MeshStandardMaterial({
+      color: 0x0a2f1f, roughness: 0.8, metalness: 0.0,
+    });
+    const woodMaterial = new THREE.MeshStandardMaterial({
+      color: 0x3d1f1f, roughness: 0.6, metalness: 0.3
+    });
+
+    const groundGeo = new THREE.CylinderGeometry(trayRadius + 1, trayRadius + 1, 0.5, 6);
+    const groundMesh = new THREE.Mesh(groundGeo, velvetMaterial);
+    groundMesh.position.y = -0.25;
+    groundMesh.rotation.y = Math.PI / 6;
+    groundMesh.receiveShadow = true;
+    scene.add(groundMesh);
+
+    const groundBody = new CANNON.Body({
+      mass: 0, shape: new CANNON.Box(new CANNON.Vec3(20, 2.5, 20)), material: physicsMaterial
+    });
+    groundBody.position.set(0, -2.5, 0);
+    world.addBody(groundBody);
+
+    const apothem = trayRadius * Math.cos(Math.PI / 6);
+    const wallLength = trayRadius * 1.16; 
+
+    for (let i = 0; i < 6; i++) {
+      const angle = i * (Math.PI / 3);
+      const distance = apothem + 0.5;
+      const x = distance * Math.cos(angle);
+      const z = distance * Math.sin(angle);
+
+      const wallGeo = new THREE.BoxGeometry(wallLength + 1, visualWallHeight, 1);
+      const wallMesh = new THREE.Mesh(wallGeo, woodMaterial);
+      wallMesh.position.set(x, visualWallHeight / 2 - 0.5, z);
+      wallMesh.rotation.y = Math.PI / 2 - angle;
+      wallMesh.castShadow = true;
+      wallMesh.receiveShadow = true;
+      scene.add(wallMesh);
+
+      const invisibleWallShape = new CANNON.Box(new CANNON.Vec3((wallLength + 2) / 2, invisibleWallHeight / 2, wallThickness / 2));
+      const invisibleWallBody = new CANNON.Body({ mass: 0, material: physicsMaterial });
+      invisibleWallBody.addShape(invisibleWallShape);
+      const physDist = apothem + wallThickness / 2;
+      invisibleWallBody.position.set(physDist * Math.cos(angle), invisibleWallHeight / 2 - 0.5, physDist * Math.sin(angle));
+      invisibleWallBody.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), Math.PI / 2 - angle);
+      world.addBody(invisibleWallBody);
+    }
+
+    // 5. 骰子工厂逻辑
+    const diceTypes = {
+      'D2': { faces: ['', '1', '2'], color: '#FFD700' },
+      'D4': { faces: [1, 2, 3, 4], color: '#3366CC' },
+      'D6': { faces: [1, 6, 2, 5, 3, 4], color: '#B8860B' },
+      'D8': { faces: [1, 8, 2, 7, 3, 6, 4, 5], color: '#8B0000' },
+      'D10': { faces: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], color: '#1E90FF' }, // 亮蓝色
+      'D12': { faces: [1, 12, 2, 11, 3, 10, 4, 9, 5, 8, 6, 7], color: '#006400' },
+      'D20': { faces: [1, 20, 2, 19, 3, 18, 4, 17, 5, 16, 6, 15, 7, 14, 8, 13, 9, 12, 10, 11], color: '#4B0082' },
+      'D100_tens': { faces: ['00', '10', '20', '30', '40', '50', '60', '70', '80', '90'], color: '#2F4F4F' },
+      'D100_ones': { faces: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], color: '#2F4F4F' },
+      'D30': { faces: Array.from({length: 30}, (_, i) => i + 1), color: '#00FFFF' } // 青色
+    };
+
+    function createDiceTexture(text, colorStr, isEmissive = false, type = '') {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512; canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+
+      if (isEmissive) {
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, 512, 512);
+      } else {
+        ctx.fillStyle = colorStr;
+        ctx.fillRect(0, 0, 512, 512);
+      }
+
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const fontStr = '"Arial", "Helvetica", sans-serif';
+      
+      let fontSize = 220; // Default (D2, D6)
+      if (type === 'D6') fontSize = 300;
+      else if (type === 'D20' || type === 'D30') fontSize = 120;
+      else if (type === 'D10' || type === 'D100_tens' || type === 'D100_ones') fontSize = 150;
+      else if (type === 'D12') fontSize = 160;
+      else if (type === 'D8') fontSize = 180;
+      else if (type === 'D4') fontSize = 180;
+      
+      ctx.font = `bold ${fontSize}px ${fontStr}`;
+      
+      let displayText = text.toString();
+      if (displayText === '6' || displayText === '9') displayText += '.';
+      ctx.fillText(displayText, 256, 276);
+      
+      return new THREE.CanvasTexture(canvas);
+    }
+
+    // D4 专属：三点式顶点纹理生成器 (极坐标对称旋转版)
+    function createD4Texture(textArray, colorStr, isEmissive = false) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512; canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = isEmissive ? '#000000' : colorStr;
+      ctx.fillRect(0, 0, 512, 512);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = 'bold 130px "Arial", sans-serif'; 
+
+      const [vTop, vLeft, vRight] = textArray;
+
+      // 核心修复：以画布绝对中心为原点，所有数字在一个半径为 110 的圆上均布
+      const center = 256;
+      const radius = 110; 
+
+      // 顶部数字 (0度偏移)
+      ctx.save();
+      ctx.translate(center, center);
+      ctx.fillText(vTop, 0, -radius);
+      ctx.restore();
+
+      // 左下角数字 (-120度，即 -Math.PI * 2 / 3)
+      ctx.save();
+      ctx.translate(center, center);
+      ctx.rotate(-Math.PI * 2 / 3);
+      ctx.fillText(vLeft, 0, -radius);
+      ctx.restore();
+
+      // 右下角数字 (+120度)
+      ctx.save();
+      ctx.translate(center, center);
+      ctx.rotate(Math.PI * 2 / 3);
+      ctx.fillText(vRight, 0, -radius);
+      ctx.restore();
+
+      return new THREE.CanvasTexture(canvas);
+    }
+
+    function createD10Geometry(scale = 1.2) {
+      const geom = new THREE.BufferGeometry();
+      const pos = [], uvs = [];
+      const H = 1.2 * scale;
+      const R = 1.0 * scale;
+      
+      // 核心物理修正：计算精确的赤道高度差 h，确保每个风筝面绝对平坦
+      const cos36 = Math.cos(Math.PI / 5);
+      const h = H * (1 - cos36) / (1 + cos36);
+
+      const vTop = new THREE.Vector3(0, H, 0);
+      const vBot = new THREE.Vector3(0, -H, 0);
+      const ring = [];
+      for (let i = 0; i < 10; i++) {
+        const a = i * Math.PI / 5;
+        // 偶数索引位于赤道上方(+h)，奇数索引位于下方(-h)
+        ring.push(new THREE.Vector3(Math.cos(a) * R, ((i % 2 === 0) ? h : -h), Math.sin(a) * R));
+      }
+
+      for (let i = 0; i < 5; i++) {
+        const e1 = i * 2;                 // 当前面的右侧赤道点
+        const o1 = (i * 2 + 1) % 10;      // 当前面的底部/顶部交汇点
+        const e2 = (i * 2 + 2) % 10;      // 当前面的左侧赤道点
+        const o0 = (i * 2 + 9) % 10;      // 底部面的交汇点
+
+        // ================= 顶半球 (Top Hemisphere) =================
+        // 确保逆时针(CCW)渲染，防止面剔除
+        pos.push(
+          vTop.x, vTop.y, vTop.z,   ring[e2].x, ring[e2].y, ring[e2].z,   ring[o1].x, ring[o1].y, ring[o1].z,
+          vTop.x, vTop.y, vTop.z,   ring[o1].x, ring[o1].y, ring[o1].z,   ring[e1].x, ring[e1].y, ring[e1].z
+        );
+
+        // 利用向量正交投影计算无损 UV
+        const xAxis = new THREE.Vector3().subVectors(ring[e1], ring[e2]).normalize(); // 从左指向右
+        const vA = new THREE.Vector3().subVectors(ring[e2], vTop);
+        const vB = new THREE.Vector3().subVectors(ring[e1], vTop);
+        const normal = new THREE.Vector3().crossVectors(vA, vB).normalize();
+        const yAxis = new THREE.Vector3().crossVectors(normal, xAxis).normalize(); // 指向 vTop
+
+        const center = new THREE.Vector3().addVectors(vTop, ring[o1]).multiplyScalar(0.5);
+        const uvScale = 0.85 / vTop.distanceTo(ring[o1]); // 统一缩放，防止数字越界拉伸
+
+        const projTop = (v) => {
+          const d = new THREE.Vector3().subVectors(v, center);
+          return [d.dot(xAxis) * uvScale + 0.5, d.dot(yAxis) * uvScale + 0.5];
+        };
+
+        const uvTop = projTop(vTop), uvE2 = projTop(ring[e2]), uvO1 = projTop(ring[o1]), uvE1 = projTop(ring[e1]);
+        uvs.push(
+          uvTop[0], uvTop[1], uvE2[0], uvE2[1], uvO1[0], uvO1[1],
+          uvTop[0], uvTop[1], uvO1[0], uvO1[1], uvE1[0], uvE1[1]
+        );
+
+        // ================= 底半球 (Bottom Hemisphere) =================
+        pos.push(
+          vBot.x, vBot.y, vBot.z,   ring[o0].x, ring[o0].y, ring[o0].z,   ring[e1].x, ring[e1].y, ring[e1].z,
+          vBot.x, vBot.y, vBot.z,   ring[e1].x, ring[e1].y, ring[e1].z,   ring[o1].x, ring[o1].y, ring[o1].z
+        );
+
+        const centerBot = new THREE.Vector3().addVectors(vBot, ring[e1]).multiplyScalar(0.5);
+        
+        // 核心修复：重置底半球的 UV 投影坐标系，消除镜像与倒置
+        // 1. 修复镜像：X轴从 o1 指向 o0 (在物理空间中向左，但在翻转读数视角下恰好是从左向右)
+        const xAxisBot = new THREE.Vector3().subVectors(ring[o1], ring[o0]).normalize(); 
+        
+        // 2. 修复倒置：Y轴强制从面中心指向底极点 (vBot)，确保数字顶部朝向骰子尖端
+        const yAxisBot = new THREE.Vector3().subVectors(vBot, centerBot).normalize(); 
+
+        const projBot = (v) => {
+          const d = new THREE.Vector3().subVectors(v, centerBot);
+          return [d.dot(xAxisBot) * uvScale + 0.5, d.dot(yAxisBot) * uvScale + 0.5];
+        };
+
+        const uvBot = projBot(vBot), uvO0 = projBot(ring[o0]), uvE1Bot = projBot(ring[e1]), uvO1Bot = projBot(ring[o1]);
+        uvs.push(
+          uvBot[0], uvBot[1], uvO0[0], uvO0[1], uvE1Bot[0], uvE1Bot[1],
+          uvBot[0], uvBot[1], uvE1Bot[0], uvE1Bot[1], uvO1Bot[0], uvO1Bot[1]
+        );
+      }
+
+      geom.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+      geom.computeVertexNormals(); // 修复光照反射
+      for (let i = 0; i < 10; i++) geom.addGroup(i * 6, 6, i); // 分配10个面的材质组
+      return geom;
+    }
+
+    // D4 专属：严格控制顶点和 UV 缠绕顺序的正四面体
+    function createD4Geometry(scale = 1.2) {
+      const geom = new THREE.BufferGeometry();
+      const R = 1.2 * scale; 
+      const pos = [], uvs = [];
+
+      // 正四面体的 4 个绝对顶点保持不变
+      const v1 = new THREE.Vector3(0, R, 0); 
+      const v2 = new THREE.Vector3(0, -R/3, 2*Math.sqrt(2)*R/3); 
+      const v3 = new THREE.Vector3(Math.sqrt(6)*R/3, -R/3, -Math.sqrt(2)*R/3); 
+      const v4 = new THREE.Vector3(-Math.sqrt(6)*R/3, -R/3, -Math.sqrt(2)*R/3); 
+
+      // 核心修复：生成一个完美的正三角形 UV 映射，确保 0 畸变
+      const uvR = 0.45; // UV 三角形外接圆半径
+      const cx = 0.5, cy = 0.5; // 画布绝对中心
+      const uvTop = [cx, cy + uvR];
+      const uvLeft = [cx - uvR * Math.cos(Math.PI / 6), cy - uvR * Math.sin(Math.PI / 6)];
+      const uvRight = [cx + uvR * Math.cos(Math.PI / 6), cy - uvR * Math.sin(Math.PI / 6)];
+
+      // 面0：底面 (当此面朝下时，v1朝上)
+      pos.push(v2.x, v2.y, v2.z,  v4.x, v4.y, v4.z,  v3.x, v3.y, v3.z);
+      uvs.push(...uvTop, ...uvLeft, ...uvRight);
+
+      // 面1：后侧面
+      pos.push(v1.x, v1.y, v1.z,  v3.x, v3.y, v3.z,  v4.x, v4.y, v4.z);
+      uvs.push(...uvTop, ...uvLeft, ...uvRight);
+
+      // 面2：左前侧面
+      pos.push(v1.x, v1.y, v1.z,  v4.x, v4.y, v4.z,  v2.x, v2.y, v2.z);
+      uvs.push(...uvTop, ...uvLeft, ...uvRight);
+
+      // 面3：右前侧面
+      pos.push(v1.x, v1.y, v1.z,  v2.x, v2.y, v2.z,  v3.x, v3.y, v3.z);
+      uvs.push(...uvTop, ...uvLeft, ...uvRight);
+
+      geom.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+      geom.computeVertexNormals();
+
+      for(let i=0; i<4; i++) geom.addGroup(i*3, 3, i);
+      return geom;
+    }
+
+    function getConvexPolyhedron(geometry) {
+      const pos = geometry.attributes.position.array;
+      const vertices = [], faces = [];
+      const vMap = new Map();
+      let vCount = 0;
+
+      function getVIdx(x, y, z) {
+        x = Math.round(x * 1000) / 1000; y = Math.round(y * 1000) / 1000; z = Math.round(z * 1000) / 1000;
+        const key = `${x},${y},${z}`;
+        if (!vMap.has(key)) { vMap.set(key, vCount++); vertices.push(new CANNON.Vec3(x, y, z)); }
+        return vMap.get(key);
+      }
+
+      const indices = geometry.index ? geometry.index.array : null;
+      if (indices) {
+        for (let i = 0; i < indices.length; i += 3) {
+          const v1 = getVIdx(pos[indices[i]*3], pos[indices[i]*3+1], pos[indices[i]*3+2]);
+          const v2 = getVIdx(pos[indices[i+1]*3], pos[indices[i+1]*3+1], pos[indices[i+1]*3+2]);
+          const v3 = getVIdx(pos[indices[i+2]*3], pos[indices[i+2]*3+1], pos[indices[i+2]*3+2]);
+          if (v1 !== v2 && v2 !== v3 && v1 !== v3) faces.push([v1, v2, v3]);
+        }
+      } else {
+        for (let i = 0; i < pos.length; i += 9) {
+          const v1 = getVIdx(pos[i], pos[i+1], pos[i+2]);
+          const v2 = getVIdx(pos[i+3], pos[i+4], pos[i+5]);
+          const v3 = getVIdx(pos[i+6], pos[i+7], pos[i+8]);
+          if (v1 !== v2 && v2 !== v3 && v1 !== v3) faces.push([v1, v2, v3]);
+        }
+      }
+
+      let cx = 0, cy = 0, cz = 0;
+      for (let i = 0; i < vertices.length; i++) {
+        cx += vertices[i].x; cy += vertices[i].y; cz += vertices[i].z;
+      }
+      cx /= vertices.length; cy /= vertices.length; cz /= vertices.length;
+      const center = new CANNON.Vec3(cx, cy, cz);
+
+      for (let i = 0; i < faces.length; i++) {
+        const face = faces[i];
+        const v0 = vertices[face[0]];
+        const v1 = vertices[face[1]];
+        const v2 = vertices[face[2]];
+        const e1 = v1.vsub(v0);
+        const e2 = v2.vsub(v0);
+        const normal = e1.cross(e2);
+        const centerToV0 = v0.vsub(center);
+        if (normal.dot(centerToV0) < 0) face.reverse();
+      }
+
+      return new CANNON.ConvexPolyhedron(vertices, faces);
+    }
+
+    function setFaceUVs(geom, facesCount, verticesPerFace) {
+      const pos = geom.attributes.position.array;
+      const uvs = new Float32Array(pos.length / 3 * 2);
+      
+      for (let i = 0; i < facesCount; i++) {
+        const startIndex = i * verticesPerFace;
+        let center = new THREE.Vector3();
+        const verts = [];
+        for (let j = 0; j < verticesPerFace; j++) {
+          const v = new THREE.Vector3(pos[(startIndex+j)*3], pos[(startIndex+j)*3+1], pos[(startIndex+j)*3+2]);
+          verts.push(v); center.add(v);
+        }
+        center.divideScalar(verticesPerFace);
+        
+        const v0 = verts[0].clone().sub(center);
+        const v1 = verts[1].clone().sub(center);
+        let normal = new THREE.Vector3().crossVectors(v0, v1).normalize();
+        if(normal.lengthSq() < 0.001) normal.crossVectors(v0, verts[2].clone().sub(center)).normalize();
+        
+        const xAxis = v1.clone().sub(v0).normalize();
+        const yAxis = new THREE.Vector3().crossVectors(normal, xAxis).normalize();
+        
+        let maxRadius = 0;
+        const proj = verts.map(v => {
+          const d = v.clone().sub(center);
+          const x = d.dot(xAxis), y = d.dot(yAxis);
+          maxRadius = Math.max(maxRadius, Math.sqrt(x*x + y*y));
+          return {x, y};
+        });
+        
+        // Adjust scale slightly to prevent edge clipping on complex geometry
+        const scale = maxRadius * 2.5; 
+        
+        for (let j = 0; j < verticesPerFace; j++) {
+          uvs[(startIndex+j)*2] = proj[j].x / scale + 0.5;
+          uvs[(startIndex+j)*2+1] = proj[j].y / scale + 0.5;
+        }
+      }
+      geom.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+    }
+
+    const diceArray = [];
+
+    function createDie(type, x, z) {
+      const config = diceTypes[type];
+      let geom, physicsShape;
+      const size = 1.2;
+      
+      if (type === 'D2') {
+        geom = new THREE.CylinderGeometry(size, size, size * 0.2, 32);
+        geom.rotateX(Math.PI / 2);
+        physicsShape = new CANNON.Cylinder(size, size, size * 0.2, 16);
+      } else if (type === 'D6') {
+        geom = new THREE.BoxGeometry(size*1.2, size*1.2, size*1.2);
+        physicsShape = new CANNON.Box(new CANNON.Vec3(size*0.6, size*0.6, size*0.6));
+      } else if (type === 'D10' || type === 'D100_tens' || type === 'D100_ones') {
+        geom = createD10Geometry(size); // 核心修复：传入全局 size 参数，增大体积防止穿模
+        physicsShape = getConvexPolyhedron(geom);
+      } else if (type === 'D4') {
+        geom = createD4Geometry(size); // 调用自定义 D4 几何体
+        physicsShape = getConvexPolyhedron(geom);
+      } else {
+        if (type === 'D8') geom = new THREE.OctahedronGeometry(size);
+        if (type === 'D12') geom = new THREE.DodecahedronGeometry(size);
+        if (type === 'D20') geom = new THREE.IcosahedronGeometry(size);
+        if (type === 'D30') geom = new THREE.IcosahedronGeometry(size * 1.2, 1);
+        
+        // Convert indexed geometry to non-indexed for proper face grouping and UV mapping
+        if (geom.index) {
+          geom = geom.toNonIndexed();
+        }
+
+        const facesCount = config.faces.length;
+        const vertsPerFace = geom.attributes.position.count / facesCount;
+        
+        geom.clearGroups();
+        for (let i = 0; i < facesCount; i++) {
+          geom.addGroup(i * vertsPerFace, vertsPerFace, i);
+        }
+        setFaceUVs(geom, facesCount, vertsPerFace);
+        physicsShape = getConvexPolyhedron(geom);
+      }
+      
+      geom.computeVertexNormals();
+
+      const materials = config.faces.map((text, index) => {
+        if (text === '') return new THREE.MeshStandardMaterial({ color: config.color, metalness: 1.0, roughness: 0.25, side: THREE.FrontSide });
+        
+        // D4 专属材质阵列逻辑：映射四个面的顶点数字组合
+        if (type === 'D4') {
+          const d4Triads = [
+            ['2', '4', '3'], // 面0 (底面)
+            ['1', '3', '4'], // 面1
+            ['1', '4', '2'], // 面2
+            ['1', '2', '3']  // 面3
+          ];
+          return new THREE.MeshStandardMaterial({
+            map: createD4Texture(d4Triads[index], config.color, false),
+            emissiveMap: createD4Texture(d4Triads[index], config.color, true),
+            emissive: new THREE.Color(0xffffff),
+            emissiveIntensity: 0.3, color: 0xffffff, metalness: 1.0, roughness: 0.25, side: THREE.FrontSide
+          });
+        }
+
+        // 其他骰子的常规材质逻辑 (保持你原有的代码不变)
+        return new THREE.MeshStandardMaterial({
+          map: createDiceTexture(text, config.color, false, type),
+          emissiveMap: createDiceTexture(text, config.color, true, type),
+          emissive: new THREE.Color(0xffffff),
+          emissiveIntensity: 0.3, color: 0xffffff, metalness: 1.0, roughness: 0.25, side: THREE.FrontSide
+        });
+      });
+
+      const mesh = new THREE.Mesh(geom, materials);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      scene.add(mesh);
+
+      const body = new CANNON.Body({
+        mass: 1,
+        shape: physicsShape,
+        material: physicsMaterial,
+        linearDamping: 0.5,
+        angularDamping: 0.5
+      });
+      body.position.set(x, 5, z);
+      world.addBody(body);
+      
+      diceArray.push({ type, mesh, body, faces: config.faces, vertsPerFace: geom.attributes.position.count / config.faces.length });
+    }
+
+    // 6. 状态管理与 UI 渲染逻辑
+    // 默认 D6 为 1，其余为 0。包含了 D2。
+    const diceState = { 'D2': 0, 'D4': 0, 'D6': 1, 'D8': 0, 'D10': 0, 'D12': 0, 'D20': 0, 'D100': 0 };
+
+    function renderDiceList() {
+      const container = document.getElementById('dice-list');
+      container.innerHTML = '';
+      
+      // 核心计算：遍历状态字典，求所有骰子的总和 (D100 天然计为 1)
+      const totalDice = Object.values(diceState).reduce((sum, count) => sum + count, 0);
+      const isMaxReached = totalDice >= 30; // 是否达到 30 颗上限
+
+      Object.keys(diceState).forEach(type => {
+        const count = diceState[type];
+        
+        // 边界判定
+        const isMinusDisabled = count === 0;
+        const isPlusDisabled = isMaxReached;
+
+        const row = document.createElement('div');
+        row.className = 'dice-row';
+        row.innerHTML = `
+          <div class="dice-label color-${type.toLowerCase()}">${type}</div>
+          <div class="counter-ctrl">
+            <button class="btn-icon" onclick="updateDiceCount('${type}', -1)" ${isMinusDisabled ? 'disabled' : ''}>-</button>
+            <div class="count-val">${count}</div>
+            <button class="btn-icon" onclick="updateDiceCount('${type}', 1)" ${isPlusDisabled ? 'disabled' : ''}>+</button>
+          </div>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    window.updateDiceCount = function(type, delta) {
+      diceState[type] = Math.max(0, diceState[type] + delta);
+      renderDiceList();
+    };
+
+    function clearTable() {
+      for (const die of diceArray) {
+        scene.remove(die.mesh);
+        world.removeBody(die.body);
+        if (die.mesh.geometry) die.mesh.geometry.dispose();
+      }
+      diceArray.length = 0;
+      document.getElementById('result-panel').style.display = 'none';
+    }
+
+    // 初始化渲染侧边栏
+    renderDiceList();
+
+    // ==========================================
+    // 覆盖原有的 btn-clear 事件监听
+    // ==========================================
+    document.getElementById('btn-clear').addEventListener('click', () => {
+      clearTable(); // 1. 清除 3D 物理世界的骰子
+      
+      // 2. 将左侧状态机的所有骰子数量强行归零
+      Object.keys(diceState).forEach(type => {
+        diceState[type] = 0;
+      });
+      
+      // 3. 重新渲染侧边栏 UI，此时所有 "-" 按钮都会自动变暗
+      renderDiceList(); 
+    });
+
+    // 7. 动画循环与点数结算
+    const resultUI = document.getElementById('result');
+    const breakdownUI = document.getElementById('breakdown');
+    let isRolling = false;
+    let rollStartTime = 0;
+
+    function calculateResult() {
+      let total = 0;
+      let resultsMap = {}; 
+      // 使用队列机制确保多颗 D100 也能正确配对
+      let d100TensQueue = []; 
+      let d100OnesQueue = [];
+      const worldUp = new THREE.Vector3(0, 1, 0);
+
+      for (const die of diceArray) {
+        let finalValue = 0;
+        
+        if (die.type === 'D2') {
+          const localZ = new THREE.Vector3(0, 0, 1).applyQuaternion(die.mesh.quaternion);
+          const dot = localZ.dot(worldUp);
+          finalValue = dot > 0 ? 1 : 2;
+        } else {
+          let maxDot = -Infinity;
+          const geom = die.mesh.geometry;
+          const pos = geom.attributes.position.array;
+          const index = geom.index ? geom.index.array : null;
+          const targetDir = die.type === 'D4' ? new THREE.Vector3(0, -1, 0) : worldUp;
+          
+          for (let i = 0; i < die.faces.length; i++) {
+            let a, b, c;
+            const group = geom.groups.find(g => g.materialIndex === i);
+            if (group) {
+              if (index) { a = index[group.start]; b = index[group.start + 1]; c = index[group.start + 2]; } 
+              else { a = group.start; b = group.start + 1; c = group.start + 2; }
+            } else {
+              const startIndex = i * die.vertsPerFace;
+              a = startIndex; b = startIndex + 1; c = startIndex + 2;
+            }
+            const v0 = new THREE.Vector3(pos[a*3], pos[a*3+1], pos[a*3+2]);
+            const v1 = new THREE.Vector3(pos[b*3], pos[b*3+1], pos[b*3+2]);
+            const v2 = new THREE.Vector3(pos[c*3], pos[c*3+1], pos[c*3+2]);
+            const e1 = new THREE.Vector3().subVectors(v1, v0);
+            const e2 = new THREE.Vector3().subVectors(v2, v0);
+            let localNormal = new THREE.Vector3().crossVectors(e1, e2).normalize();
+            
+            const faceCenter = new THREE.Vector3().addVectors(v0, v1).add(v2).divideScalar(3);
+            if (localNormal.dot(faceCenter) < 0) localNormal.negate();
+            
+            const worldNormal = localNormal.applyQuaternion(die.mesh.quaternion).normalize();
+            const dotProduct = worldNormal.dot(targetDir);
+            
+            if (dotProduct > maxDot) {
+              maxDot = dotProduct;
+              finalValue = parseInt(die.faces[i], 10);
+            }
+          }
+        }
+
+        // 分类聚合数据
+        if (die.type === 'D100_tens') {
+          d100TensQueue.push(finalValue);
+        } else if (die.type === 'D100_ones') {
+          d100OnesQueue.push(finalValue);
+        } else {
+          if (!resultsMap[die.type]) resultsMap[die.type] = [];
+          resultsMap[die.type].push(finalValue);
+          total += finalValue;
+        }
+      }
+
+      // 匹配处理所有 D100 的十位和个位
+      while (d100TensQueue.length > 0 && d100OnesQueue.length > 0) {
+        let tens = d100TensQueue.shift();
+        let ones = d100OnesQueue.shift();
+        let val = tens + ones;
+        if (val === 0) val = 100; // 00 + 0 = 100
+        if (!resultsMap['D100']) resultsMap['D100'] = [];
+        resultsMap['D100'].push(val);
+        total += val;
+      }
+      
+      // 渲染分组结果 DOM
+      const breakdownContainer = document.getElementById('result-breakdown');
+      breakdownContainer.innerHTML = '';
+      
+      const displayOrder = ['D2', 'D4', 'D6', 'D8', 'D10', 'D12', 'D20', 'D100'];
+      
+      displayOrder.forEach(type => {
+        if (resultsMap[type] && resultsMap[type].length > 0) {
+          const groupDiv = document.createElement('div');
+          groupDiv.className = 'result-group';
+          
+          const titleDiv = document.createElement('div');
+          titleDiv.className = `result-group-title color-${type.toLowerCase()}`;
+          titleDiv.innerText = type;
+          
+          const boxesDiv = document.createElement('div');
+          boxesDiv.className = 'result-boxes';
+          resultsMap[type].forEach(val => {
+            const box = document.createElement('div');
+            box.className = 'res-box';
+            box.innerText = val;
+            boxesDiv.appendChild(box);
+          });
+          
+          groupDiv.appendChild(titleDiv);
+          groupDiv.appendChild(boxesDiv);
+          breakdownContainer.appendChild(groupDiv);
+        }
+      });
+
+      document.getElementById('result-total').innerText = total;
+      
+      // 【核心修复】：保护电脑端不受影响，同时在手机端唤醒 Flex 弹性重排
+      if (window.innerWidth <= 768) {
+        document.getElementById('result-panel').style.display = 'flex'; 
+      } else {
+        document.getElementById('result-panel').style.display = 'block'; 
+      }
+    }
+
+    let lastTime = performance.now();
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const time = performance.now();
+      const deltaTime = (time - lastTime) / 1000;
+      lastTime = time;
+
+      // 防穿透步进 (40次)
+      world.step(1 / 60, deltaTime, 40);
+
+      let allSleeping = true;
+
+      for (const die of diceArray) {
+        die.mesh.position.copy(die.body.position);
+        die.mesh.quaternion.copy(die.body.quaternion);
+
+        const speed = die.body.velocity.lengthSquared();
+        const angularSpeed = die.body.angularVelocity.lengthSquared();
+        
+        if (speed < 0.1 && angularSpeed < 0.1) {
+          die.sleepFrames = (die.sleepFrames || 0) + 1;
+        } else {
+          die.sleepFrames = 0;
+        }
+
+        if (die.body.sleepState !== CANNON.Body.SLEEPING && die.sleepFrames < 45) {
+          allSleeping = false;
+        }
+
+        // D2 物理保障：严格检测倾斜角，防止立起或斜靠在其他骰子上
+        if (die.type === 'D2' && speed < 0.1 && angularSpeed < 0.1) {
+          const localZ = new CANNON.Vec3(0, 0, 1);
+          const worldZ = die.body.quaternion.vmult(localZ);
+          const dot = Math.abs(worldZ.dot(new CANNON.Vec3(0, 1, 0)));
+          
+          // 【核心修复】：将阈值提升至 0.95。只要不平躺，立刻唤醒
+          if (dot < 0.95) { 
+            die.body.wakeUp();
+            
+            // 增加一个微小的向上弹力，帮它“跳”出卡住的夹角
+            die.body.applyImpulse(new CANNON.Vec3(0, 2.5, 0), new CANNON.Vec3(0, 0, 0));
+            
+            die.body.torque.x += (Math.random() - 0.5) * 50;
+            die.body.torque.y += (Math.random() - 0.5) * 50;
+            die.body.torque.z += (Math.random() - 0.5) * 50;
+            
+            allSleeping = false;
+            die.sleepFrames = 0; // 重置休眠计数
+          }
+        }
+
+        // =========================================================
+        // 【新增】：全局防堆叠 / 防卡墙物理保障
+        // 如果骰子近乎静止，但高度异常（>2.0），将其向中心“拨”下来
+        // =========================================================
+        if (speed < 0.1 && angularSpeed < 0.1 && die.body.position.y > 2.0) {
+          die.body.wakeUp();
+          
+          // 计算一个指向托盘中心点 (0, 0, 0) 的水平向量
+          const toCenter = new CANNON.Vec3(-die.body.position.x, 0, -die.body.position.z);
+          toCenter.normalize();
+          
+          // 施加向中心的推力，并加入一点随机扰动防止死锁
+          const knockForce = 3; 
+          const impulse = new CANNON.Vec3(
+            toCenter.x * knockForce + (Math.random() - 0.5) * 2,
+            0,
+            toCenter.z * knockForce + (Math.random() - 0.5) * 2
+          );
+          
+          die.body.applyImpulse(impulse, new CANNON.Vec3(0, 0, 0));
+          
+          // 加上随机扭矩，让骰子滚落得更自然
+          die.body.torque.x += (Math.random() - 0.5) * 20;
+          die.body.torque.z += (Math.random() - 0.5) * 20;
+          
+          allSleeping = false;
+          die.sleepFrames = 0; // 重置该骰子的休眠计数
+        }
+      } // <-- 这是 for (const die of diceArray) 循环的结束括号
+
+      // 如果所有骰子静止，或者投掷时间超过 20 秒，强制结算
+      if (isRolling && (allSleeping || (time - rollStartTime > 20000))) {
+        isRolling = false;
+        calculateResult();
+      }
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // ==========================================
+    // 移动端 UI 切换逻辑
+    // ==========================================
+    window.toggleMobileSidebar = function() {
+      if (window.innerWidth > 768) return;
+      const sidebar = document.getElementById('sidebar');
+      sidebar.classList.toggle('collapsed');
+      const icon = document.getElementById('mobile-toggle-icon');
+      icon.innerText = sidebar.classList.contains('collapsed') ? '▲ 展开面板' : '▼ 收起面板';
+    };
+
+    // 致谢弹窗控制逻辑
+    window.toggleAboutModal = function(show) {
+      const modal = document.getElementById('about-modal');
+      if (show) {
+        modal.classList.add('show');
+      } else {
+        modal.classList.remove('show');
+      }
+    };
+
+    window.toggleResultDetails = function() {
+      const panel = document.getElementById('result-panel');
+      panel.classList.toggle('show-details');
+      const toggle = document.getElementById('mobile-details-toggle');
+      toggle.innerText = panel.classList.contains('show-details') ? '收起详情 ▲' : '查看详情 ▼';
+    };
+
+    // 8. 按钮触发投掷与清空
+
+    document.getElementById('btn-roll').addEventListener('click', () => {
+      clearTable(); // 每次掷骰前清空上一轮
+      isRolling = true;
+      rollStartTime = performance.now();
+      document.getElementById('result-panel').style.display = 'none';
+
+      let hasDice = false;
+      Object.keys(diceState).forEach(type => {
+        for (let i = 0; i < diceState[type]; i++) {
+          hasDice = true;
+          // 随机散开生成，防止叠压
+          const offsetX = (Math.random() - 0.5) * 8;
+          const offsetZ = (Math.random() - 0.5) * 8;
+          
+          if (type === 'D100') {
+            // D100 自动生成一对十位和个位
+            createDie('D100_tens', offsetX - 1, offsetZ);
+            createDie('D100_ones', offsetX + 1, offsetZ);
+          } else {
+            createDie(type, offsetX, offsetZ);
+          }
+        }
+      });
+
+      if (!hasDice) { isRolling = false; return; }
+
+      // 施加初始物理冲力
+      for (const die of diceArray) {
+        die.body.quaternion.setFromEuler(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+        const impulse = new CANNON.Vec3( -die.body.position.x * 1.5, -20, -die.body.position.z * 1.5 );
+        die.body.velocity.set(0, 0, 0);
+        die.body.angularVelocity.set((Math.random() - 0.5) * 50, (Math.random() - 0.5) * 50, (Math.random() - 0.5) * 50);
+        die.body.applyImpulse(impulse, new CANNON.Vec3(0, 0, 0));
+      }
+
+      // 【新增】：移动端专属联动 - 掷骰后自动收起下方托盘，并重置上方详情框
+      if (window.innerWidth <= 768) {
+        document.getElementById('sidebar').classList.add('collapsed');
+        document.getElementById('mobile-toggle-icon').innerText = '▲ 展开面板';
+        document.getElementById('result-panel').classList.remove('show-details');
+        document.getElementById('mobile-details-toggle').innerText = '查看详情 ▼';
+      }
+    });
+
+    function updateCameraFOV() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      
+      // 【核心修复】：移动端屏幕窄，将摄像机向上、向后拉远，确保骰盘完整居中显示
+      if (window.innerWidth <= 768) {
+        camera.position.set(0, 42, 28); 
+      } else {
+        camera.position.set(0, 28, 20); // 电脑端保持原样
+      }
+    }
+    
+    window.addEventListener('resize', updateCameraFOV);
+    updateCameraFOV(); // 初始化时主动调用一次，适配当前设备的初始形态
+  </script>
+</body>
+</html>
