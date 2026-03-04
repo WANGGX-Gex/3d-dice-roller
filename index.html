@@ -19,10 +19,15 @@
     .dice-row { display: flex; justify-content: space-between; align-items: center; background: rgba(30, 32, 45, 0.8); margin-bottom: 10px; padding: 8px 15px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05); }
     .dice-label { font-weight: bold; font-size: 1.1rem; width: 50px; }
     
-    /* 骰子专属颜色 */
-    .color-d2 { color: #FFD700; } .color-d4 { color: #5bc0eb; } .color-d6 { color: #f25f5c; } 
-    .color-d8 { color: #9bc53d; } .color-d10 { color: #f8961e; } .color-d12 { color: #c34271; } 
-    .color-d20 { color: #ef476f; } .color-d100 { color: #ffd166; }
+    /* 骰子专属颜色 (视觉舒适优化版) */
+    .color-d2 { color: #FFD700; } 
+    .color-d4 { color: #3B82F6; }  /* 蓝色 */
+    .color-d6 { color: #D9A05B; }  /* 土黄色 */
+    .color-d8 { color: #EF4444; }  /* 红色 */
+    .color-d10 { color: #06B6D4; } /* 青色 */
+    .color-d12 { color: #22C55E; } /* 绿色 */
+    .color-d20 { color: #A855F7; } /* 紫色 */
+    .color-d100 { color: #9CA3AF; } /* 灰色 */
     
     .counter-ctrl { display: flex; align-items: center; gap: 12px; }
     .btn-icon { background: #3a3f58; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
@@ -56,20 +61,29 @@
     .total-title { color: #a0a5bc; text-align: center; font-size: 0.9rem; margin-bottom: 5px; }
     .total-val { color: #f5d061; text-align: center; font-size: 2.5rem; font-weight: bold; text-shadow: 0 0 20px rgba(245, 208, 97, 0.4); }
   
+/* ========================================== */
+    /* 悬浮按钮组与弹窗样式 (FAB & Modals) */
     /* ========================================== */
-    /* 说明与致谢弹窗样式 (About Modal) */
-    /* ========================================== */
-    .about-btn { position: absolute; bottom: 20px; right: 20px; width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.05); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.15); color: #a0a5bc; font-size: 1.1rem; font-family: serif; font-style: italic; cursor: pointer; z-index: 5; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
-    .about-btn:hover { background: rgba(255,255,255,0.15); color: #fff; transform: scale(1.1); }
+    .fab-container {
+      position: absolute; bottom: 20px; right: 20px;
+      display: flex; flex-direction: column; gap: 12px; z-index: 1000;
+    }
+    .icon-btn {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: rgba(255,255,255,0.05); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+      border: 1px solid rgba(255,255,255,0.15); color: #a0a5bc;
+      font-size: 1.2rem; cursor: pointer; transition: 0.2s;
+      display: flex; align-items: center; justify-content: center; font-family: serif; font-style: italic;
+    }
+    .icon-btn:hover { background: rgba(255,255,255,0.15); color: #fff; transform: scale(1.1); }
     
-    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 100; display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s; }
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 2000; display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s; }
     .modal-overlay.show { display: flex; opacity: 1; }
     
     .modal-content { background: #141623; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 30px; max-width: 340px; width: 85%; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.5); transform: translateY(20px); transition: transform 0.3s; }
     .modal-overlay.show .modal-content { transform: translateY(0); }
     
     .modal-title { margin: 0 0 15px 0; color: #f5d061; font-size: 1.3rem; }
-    /* 专属主创署名样式 */
     .modal-author { color: #a0a5bc; font-size: 0.85rem; margin-bottom: 15px; letter-spacing: 1px; text-transform: uppercase; font-family: monospace; }
     .highlight-author { color: #f9a826; font-weight: bold; font-size: 1.1rem; font-family: -apple-system, sans-serif; text-transform: none; text-shadow: 0 0 10px rgba(249, 168, 38, 0.4); }
     .modal-text { color: #a0a5bc; font-size: 0.95rem; line-height: 1.6; margin-bottom: 0; }
@@ -80,6 +94,15 @@
     
     .modal-close-btn { background: #3a3f58; color: white; border: none; padding: 10px 40px; border-radius: 8px; font-size: 1rem; cursor: pointer; transition: 0.2s; font-weight: bold; }
     .modal-close-btn:hover { background: #4a5070; }
+
+    /* iOS 风格的开关按钮 (Toggle Switch) */
+    .settings-row { display: flex; justify-content: space-between; align-items: center; color: #fff; margin: 20px 0; font-size: 1.05rem; font-weight: bold; }
+    .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #3a3f58; transition: .4s; border-radius: 34px; }
+    .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+    input:checked + .slider { background-color: #1E90FF; }
+    input:checked + .slider:before { transform: translateX(22px); }
 
     /* ========================================== */
     /* 跨端通用基础类 */
@@ -93,8 +116,15 @@
     @media (max-width: 768px) {
       .mobile-only { display: block; }
 
-      /* 【新增】：将致谢按钮移动到移动端右上角 */
-      .about-btn { top: 20px; right: 20px; bottom: auto; }
+      /* 1. 移动端：按钮改为竖向排列，并向下挪动避开顶部磨砂框边缘 */
+      .fab-container { 
+        top: 30px;            /* 向下挪动，确保不顶着总和面板的顶部边缘 */
+        left: 22px;           /* 稍微增加边距，视觉更呼吸 */
+        bottom: auto; 
+        right: auto; 
+        flex-direction: column; /* 改为竖着摆放 */
+        gap: 10px;            /* 增加按钮间的间距，方便手指点按 */
+      }
       
       /* 1. 左侧面板变身：底部滑动抽屉 (Bottom Sheet) */
       #sidebar {
@@ -166,30 +196,67 @@
         font-size: 0.9rem; 
         cursor: pointer; 
       }
+
+      /* 2. 移动端：强制弹窗内容在手机画面正中央，并优化宽度 */
+      .modal-overlay {
+        display: none;        /* 保持默认隐藏 */
+        align-items: center;  /* 垂直居中 */
+        justify-content: center; /* 水平居中 */
+      }
+      .modal-overlay.show {
+        display: flex;        /* 激活时使用 flex 居中 */
+      }
+      .modal-content {
+        width: 80%;           /* 在手机上稍微收窄一点，看起来更精致 */
+        padding: 25px;        /* 缩小内边距 */
+        transform: translateY(0); /* 移除默认的位移，确保绝对居中 */
+      }
     }
 
   </style>
 </head>
 <body>
-  <button id="btn-about" class="about-btn" onclick="toggleAboutModal(true)">i</button>
+  <div class="fab-container">
+    <button id="btn-settings" class="icon-btn" onclick="toggleSettingsModal(true)" style="font-style: normal;">⚙️</button>
+    <button id="btn-about" class="icon-btn" onclick="toggleAboutModal(true)">i</button>
+  </div>
+
+  <div id="settings-modal" class="modal-overlay" onclick="if(event.target === this) toggleSettingsModal(false)">
+    <div class="modal-content">
+      <h2 class="modal-title" style="margin-bottom: 10px;">⚙️ 偏好设置</h2>
+      
+      <div class="settings-row">
+        <span>🔊 骰子碰撞音效</span>
+        <label class="switch">
+          <input type="checkbox" id="toggle-sound">
+          <span class="slider"></span>
+        </label>
+      </div>
+      
+      <div class="settings-row">
+        <span>📱 摇一摇掷骰子</span>
+        <label class="switch">
+          <input type="checkbox" id="toggle-shake" onchange="handleShakeToggle(this)">
+          <span class="slider"></span>
+        </label>
+      </div>
+      
+      <button class="modal-close-btn" style="margin-top: 15px;" onclick="toggleSettingsModal(false)">完成</button>
+    </div>
+  </div>
 
   <div id="about-modal" class="modal-overlay" onclick="if(event.target === this) toggleAboutModal(false)">
     <div class="modal-content">
       <h2 class="modal-title" style="margin-bottom: 5px;">🎲 关于 3D 物理骰子</h2>
-      
       <div class="modal-author">Designed by <span class="highlight-author">@WANGGX</span></div>
-      
       <p class="modal-text">这是一个基于 WebGL 与 Cannon.js 驱动的纯前端 3D 掷骰子引擎。它具备严密的物理防穿透、高精度的多面体 UV 映射，以及媲美原生 App 的多端适配体验，完美适用于游戏化场景与桌面互动。</p>
-      
       <div class="modal-divider"></div>
-      
       <p class="modal-thanks">✨ 特别鸣谢 ✨</p>
       <p class="modal-text">本程序的诞生离不开以下两位好友的<br>耐心的技术辅导与不懈的情绪支持：</p>
       <div class="credits-names">
-        <span class="highlight">@fonk</span>
         <span class="highlight">@bhonny</span>
+        <span class="highlight">@fonk</span>
       </div>
-      
       <button class="modal-close-btn" onclick="toggleAboutModal(false)">关闭</button>
     </div>
   </div>
@@ -217,6 +284,82 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
 
   <script>
+    // ==========================================
+    // 硬件调用：程序化音频合成与重力感应
+    // ==========================================
+    let audioCtx;
+    function initAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    // 利用波形生成逼真的物理碰撞 "哒哒" 声
+    function playClack(velocity) {
+      const soundToggle = document.getElementById('toggle-sound');
+      if (!soundToggle || !soundToggle.checked) return;
+      if (!audioCtx) initAudio();
+      if (audioCtx.state === 'suspended') return;
+      
+      const osc = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      
+      osc.type = 'triangle'; // 三角波有木质敲击感
+      osc.frequency.setValueAtTime(800 + Math.random() * 400, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.05); // 音高快速衰减形成打击感
+      
+      gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+      const vol = Math.min(velocity / 15, 0.5); // 声音大小随物理碰撞力度变化
+      gainNode.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + 0.005);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+      
+      osc.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.05);
+    }
+
+    // 摇一摇防抖与监听
+    let lastShakeTime = 0;
+    let lastX = null, lastY = null, lastZ = null;
+    function deviceMotionHandler(event) {
+      if (!document.getElementById('toggle-shake').checked || isRolling) return;
+      const current = event.accelerationIncludingGravity;
+      if (!current || !current.x) return;
+      
+      const curTime = Date.now();
+      if ((curTime - lastShakeTime) > 100) {
+        const diffTime = (curTime - lastShakeTime);
+        lastShakeTime = curTime;
+        if (lastX !== null) {
+          const speed = Math.abs(current.x + current.y + current.z - lastX - lastY - lastZ) / diffTime * 10000;
+          if (speed > 1500) { // 触发阈值
+            document.getElementById('btn-roll').click(); // 触发掷骰
+          }
+        }
+        lastX = current.x; lastY = current.y; lastZ = current.z;
+      }
+    }
+
+    // 处理摇一摇开关（兼容 iOS 13+ 权限请求）
+    window.handleShakeToggle = function(checkbox) {
+      if (checkbox.checked) {
+        if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+          DeviceMotionEvent.requestPermission().then(state => {
+            if (state === 'granted') {
+              window.addEventListener('devicemotion', deviceMotionHandler, false);
+            } else {
+              alert('需要设备动作权限才能使用摇一摇。');
+              checkbox.checked = false;
+            }
+          }).catch(console.error);
+        } else {
+          window.addEventListener('devicemotion', deviceMotionHandler, false);
+        }
+      } else {
+        window.removeEventListener('devicemotion', deviceMotionHandler, false);
+      }
+    };
+
     // 1. 初始化物理世界
     const world = new CANNON.World();
     world.gravity.set(0, -30, 0);
@@ -735,6 +878,15 @@
       });
       body.position.set(x, 5, z);
       world.addBody(body);
+
+      // 【新增】：监听 Cannon.js 的刚体物理碰撞事件
+      body.addEventListener("collide", function(e) {
+        const relativeVelocity = e.contact.getImpactVelocityAlongNormal();
+        // 只有碰撞力度大于 1.0 时才发声，过滤掉微小的摩擦
+        if (Math.abs(relativeVelocity) > 1.0) {
+          playClack(Math.abs(relativeVelocity));
+        }
+      });
       
       diceArray.push({ type, mesh, body, faces: config.faces, vertsPerFace: geom.attributes.position.count / config.faces.length });
     }
@@ -794,6 +946,7 @@
     // 覆盖原有的 btn-clear 事件监听
     // ==========================================
     document.getElementById('btn-clear').addEventListener('click', () => {
+      initAudio(); // 每次点击时唤醒音频引擎，打破浏览器静音限制
       clearTable(); // 1. 清除 3D 物理世界的骰子
       
       // 2. 将左侧状态机的所有骰子数量强行归零
@@ -1038,6 +1191,11 @@
       } else {
         modal.classList.remove('show');
       }
+    };
+
+    window.toggleSettingsModal = function(show) {
+      const modal = document.getElementById('settings-modal');
+      modal.classList.toggle('show', show);
     };
 
     window.toggleResultDetails = function() {
