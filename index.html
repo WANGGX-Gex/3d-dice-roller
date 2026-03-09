@@ -2,10 +2,10 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>3D 物理骰子 By WANGGX</title>
   <style>
-  html, body { margin: 0; overflow: hidden; background-color: #0d0e15; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; touch-action: manipulation; -ms-touch-action: manipulation; }
+  body { margin: 0; overflow: hidden; background-color: #0d0e15; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
     
     /* 左侧：骰子选择面板 */
     #sidebar {
@@ -30,7 +30,7 @@
     .color-d100 { color: #9CA3AF; } /* 灰色 */
     
     .counter-ctrl { display: flex; align-items: center; gap: 12px; }
-    .btn-icon { background: #3a3f58; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; transition: 0.2s; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    .btn-icon { background: #3a3f58; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
     .btn-icon:hover { background: #4a5070; }
 
     /* 新增：按钮禁用的暗化视觉效果 */
@@ -38,7 +38,7 @@
     .btn-icon:disabled:hover { background: #2a2d40; }
     .count-val { color: white; font-weight: bold; width: 20px; text-align: center; }
 
-    .action-btn { width: 100%; padding: 12px; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; border: none; margin-top: 10px; transition: 0.2s; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    .action-btn { width: 100%; padding: 12px; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; border: none; margin-top: 10px; transition: 0.2s; }
     #btn-roll { background: linear-gradient(135deg, #f9a826, #f25f5c); color: white; box-shadow: 0 4px 15px rgba(242, 95, 92, 0.4); }
     #btn-roll:hover { opacity: 0.9; transform: translateY(-1px); }
     #btn-clear { background: transparent; color: #a0a5bc; border: 1px solid #4a5070; margin-top: 10px; }
@@ -284,26 +284,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
 
   <script>
-    // ==========================================
-    // 移动端交互修复：禁用双击缩放 / 连按放大
-    // ==========================================
-    let lastTouchEnd = 0;
-    document.addEventListener('touchend', function(event) {
-      const now = Date.now();
-      if (now - lastTouchEnd <= 300) {
-        event.preventDefault();
-      }
-      lastTouchEnd = now;
-    }, { passive: false });
-
-    document.addEventListener('dblclick', function(event) {
-      event.preventDefault();
-    }, { passive: false });
-
-    document.addEventListener('gesturestart', function(event) {
-      event.preventDefault();
-    }, { passive: false });
-
     // ==========================================
     // 硬件调用：程序化音频合成与重力感应
     // ==========================================
@@ -1059,11 +1039,6 @@
         total += val;
       }
       
-      // 同类骰子结果按从小到大排序（桌面端 / 移动端统一）
-      Object.keys(resultsMap).forEach(type => {
-        resultsMap[type].sort((a, b) => a - b);
-      });
-
       // 渲染分组结果 DOM
       const breakdownContainer = document.getElementById('result-breakdown');
       breakdownContainer.innerHTML = '';
