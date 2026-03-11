@@ -286,12 +286,15 @@
     // 物理世界
     // ==========================================
     const world = new CANNON.World();
-    world.gravity.set(0, -60, 0); // 大重力 → 快速落定
+    world.gravity.set(0, -50, 0);
     world.broadphase = new CANNON.NaiveBroadphase();
     world.solver.iterations = isMobile ? 20 : 30;
     world.allowSleep = true;
+    // 全局休眠参数：速度低于阈值时快速进入休眠，消除微颤
+    world.defaultContactMaterial.contactEquationStiffness = 1e8;
+    world.defaultContactMaterial.contactEquationRelaxation = 3;
     const physicsMaterial = new CANNON.Material("standard");
-    world.addContactMaterial(new CANNON.ContactMaterial(physicsMaterial, physicsMaterial, { friction: 0.5, restitution: 0.15 }));
+    world.addContactMaterial(new CANNON.ContactMaterial(physicsMaterial, physicsMaterial, { friction: 0.5, restitution: 0.2 }));
 
     // ==========================================
     // 渲染
@@ -557,8 +560,11 @@
       const{geom,shape}=getGeomAndShape(type);
       const mesh=new THREE.Mesh(geom,getMaterials(type));
       mesh.castShadow=true;mesh.receiveShadow=true;scene.add(mesh);
-      const body=new CANNON.Body({mass:1,shape,material:physicsMaterial,linearDamping:0.6,angularDamping:0.6});
-      body.position.set(x,4,z);world.addBody(body);
+      const body=new CANNON.Body({mass:1,shape,material:physicsMaterial,linearDamping:0.4,angularDamping:0.4});
+      // Cannon.js 内置休眠：速度低于阈值后 0.3 秒自动休眠
+      body.sleepSpeedLimit = 0.5;  // 线速度+角速度低于此值开始计时
+      body.sleepTimeLimit = 0.3;   // 持续 0.3 秒后休眠，消除微颤
+      body.position.set(x,8,z);world.addBody(body);
       let lct=0;body.addEventListener("collide",function(e){const now=performance.now();if(now-lct<50)return;const v=Math.abs(e.contact.getImpactVelocityAlongNormal());if(v>1.5){playClack(v);lct=now;}});
       const config=diceTypes[type];
       diceArray.push({type,mesh,body,faces:config.faces,vertsPerFace:geom.attributes.position.count/config.faces.length});
@@ -625,64 +631,49 @@
       for(const die of diceArray){
         die.mesh.position.copy(die.body.position);
         die.mesh.quaternion.copy(die.body.quaternion);
-        const spd=die.body.velocity.lengthSquared(),asp=die.body.angularVelocity.lengthSquared();
-        if(spd<0.1&&asp<0.1){die.sleepFrames=(die.sleepFrames||0)+1;}else{die.sleepFrames=0;}
-        if(die.body.sleepState!==CANNON.Body.SLEEPING&&die.sleepFrames<45) allSleep=false;
 
-        // D2 倾斜唤醒
-        if(die.type==='D2'&&spd<0.1&&asp<0.1){
-          const wz=die.body.quaternion.vmult(new CANNON.Vec3(0,0,1));
-          if(Math.abs(wz.dot(new CANNON.Vec3(0,1,0)))<0.95){
-            die.body.wakeUp();die.body.applyImpulse(new CANNON.Vec3(0,2.5,0),new CANNON.Vec3(0,0,0));
-            die.body.torque.x+=(Math.random()-0.5)*50;die.body.torque.y+=(Math.random()-0.5)*50;die.body.torque.z+=(Math.random()-0.5)*50;
-            allSleep=false;die.sleepFrames=0;}}
+        const isSleeping = die.body.sleepState === CANNON.Body.SLEEPING;
+        
+        // 微速度强制归零
+        const spd=die.body.velocity.lengthSquared(), asp=die.body.angularVelocity.lengthSquared();
+        if(spd<0.05&&asp<0.05&&!isSleeping){
+          die.body.velocity.set(0,0,0);
+          die.body.angularVelocity.set(0,0,0);
+          die.body.sleep();
+        }
 
-        // D10/D100 倾斜唤醒：检查最大面法线是否足够朝上
-        if(isD10Type(die.type)&&spd<0.1&&asp<0.1){
-          // 找到最朝上的面法线的点积
-          const geom=die.mesh.geometry, pos=geom.attributes.position.array;
-          let bestDot=0;
-          for(let fi=0;fi<10;fi++){
-            const si=fi*6; // 每面6个顶点
-            const v0=new THREE.Vector3(pos[si*3],pos[si*3+1],pos[si*3+2]);
-            const v1=new THREE.Vector3(pos[(si+1)*3],pos[(si+1)*3+1],pos[(si+1)*3+2]);
-            const v2=new THREE.Vector3(pos[(si+2)*3],pos[(si+2)*3+1],pos[(si+2)*3+2]);
-            let ln=new THREE.Vector3().crossVectors(
-              new THREE.Vector3().subVectors(v1,v0),
-              new THREE.Vector3().subVectors(v2,v0)
-            ).normalize();
-            const fc2=new THREE.Vector3().addVectors(v0,v1).add(v2).divideScalar(3);
-            if(ln.dot(fc2)<0) ln.negate();
-            const wn=ln.applyQuaternion(die.mesh.quaternion).normalize();
-            const d=wn.dot(new THREE.Vector3(0,1,0));
-            if(d>bestDot) bestDot=d;
-          }
-          // 如果最佳面法线点积 < 0.90，说明没有面正朝上，重新摇
-          if(bestDot<0.90){
-            die.body.wakeUp();
-            die.body.applyImpulse(new CANNON.Vec3((Math.random()-0.5)*3, 4, (Math.random()-0.5)*3),new CANNON.Vec3(0,0,0));
-            die.body.torque.x+=(Math.random()-0.5)*40;die.body.torque.z+=(Math.random()-0.5)*40;
-            allSleep=false;die.sleepFrames=0;}}
+        if(!isSleeping) allSleep=false;
 
-        // 防堆叠：高度>1.3就推下来
-        if(spd<0.1&&asp<0.1&&die.body.position.y>1.3){
-          die.body.wakeUp();
-          const tc=new CANNON.Vec3(-die.body.position.x,0,-die.body.position.z);tc.normalize();
-          die.body.applyImpulse(new CANNON.Vec3(tc.x*5+(Math.random()-0.5)*2,1,tc.z*5+(Math.random()-0.5)*2),new CANNON.Vec3(0,0,0));
-          die.body.torque.x+=(Math.random()-0.5)*25;die.body.torque.z+=(Math.random()-0.5)*25;
-          allSleep=false;die.sleepFrames=0;}
-
-        // 防靠墙：骰子不能贴着边缘
-        if(spd<0.1&&asp<0.1){
-          const distFC=Math.sqrt(die.body.position.x*die.body.position.x+die.body.position.z*die.body.position.z);
-          if(distFC>trayRadius-2){
-            die.body.wakeUp();
-            const tc=new CANNON.Vec3(-die.body.position.x,0,-die.body.position.z);tc.normalize();
-            die.body.applyImpulse(new CANNON.Vec3(tc.x*6,2,tc.z*6),new CANNON.Vec3(0,0,0));
-            allSleep=false;die.sleepFrames=0;}}
+        // D2 防立起：检测硬币倾斜方向，顺着倾斜方向轻推使其倒下
+        const spd2=die.body.velocity.lengthSquared(), asp2=die.body.angularVelocity.lengthSquared();
+        if(die.type==='D2' && spd2<0.3 && asp2<0.3 && !isSleeping){
+          if(!die.d2fix) die.d2fix=0;
+          if(die.d2fix < 8){ // 多给几次机会
+            const localZ=new CANNON.Vec3(0,0,1); // D2 的正面法线方向
+            const worldZ=die.body.quaternion.vmult(localZ);
+            const upDot=Math.abs(worldZ.dot(new CANNON.Vec3(0,1,0)));
+            if(upDot < 0.92){ // 硬币没有平躺
+              die.body.wakeUp();
+              // 找到硬币当前倾斜的水平方向（worldZ 在 xz 平面的投影）
+              // 顺着这个方向施加扭矩，让硬币自然倒向已经倾斜的那一侧
+              const tiltX = worldZ.x;
+              const tiltZ = worldZ.z;
+              const tiltLen = Math.sqrt(tiltX*tiltX + tiltZ*tiltZ);
+              if(tiltLen > 0.01){
+                // 顺着倾斜方向给一个小推力
+                die.body.applyImpulse(
+                  new CANNON.Vec3(tiltX/tiltLen * 0.3, 0.2, tiltZ/tiltLen * 0.3),
+                  new CANNON.Vec3(0, 0, 0)
+                );
+              } else {
+                // 几乎完美竖直，随机给一个方向
+                die.body.applyImpulse(new CANNON.Vec3((Math.random()-0.5)*0.5, 0.2, (Math.random()-0.5)*0.5), new CANNON.Vec3(0,0,0));
+              }
+              die.d2fix++;
+              allSleep=false;}}}
       }
 
-      if(isRolling&&(allSleep||(time-rollStartTime>12000))){isRolling=false;calculateResult();}
+      if(isRolling&&(allSleep||(time-rollStartTime>10000))){isRolling=false;calculateResult();}
       renderer.render(scene,camera);
     }
     animate();
@@ -705,18 +696,38 @@
       document.getElementById('result-panel').style.display='none';
       let hasDice=false;
       Object.keys(diceState).forEach(type=>{for(let i=0;i<diceState[type];i++){hasDice=true;
+        // 生成位置在盘面中心区域内随机
         const ox=(Math.random()-0.5)*4,oz=(Math.random()-0.5)*4;
         if(type==='D100'){createDie('D100_tens',ox-0.8,oz);createDie('D100_ones',ox+0.8,oz);}
         else createDie(type,ox,oz);}});
       if(!hasDice){isRolling=false;return;}
 
       for(const die of diceArray){
-        die.body.quaternion.setFromEuler(Math.random()*Math.PI,Math.random()*Math.PI,Math.random()*Math.PI);
-        die.body.velocity.set(0,0,0);
-        // 大角速度 → 骰子转得更猛烈
-        die.body.angularVelocity.set((Math.random()-0.5)*80,(Math.random()-0.5)*80,(Math.random()-0.5)*80);
-        // 大冲力向下 + 向中心收
-        die.body.applyImpulse(new CANNON.Vec3(-die.body.position.x*2.5,-35,-die.body.position.z*2.5),new CANNON.Vec3(0,0,0));
+        // 随机初始朝向
+        die.body.quaternion.setFromEuler(Math.random()*Math.PI*2,Math.random()*Math.PI*2,Math.random()*Math.PI*2);
+        
+        // 随机水平初速度：让骰子有明显的"被抛出"感
+        const hSpd = 8 + Math.random() * 12; // 8~20 的随机水平速度
+        const angle = Math.random() * Math.PI * 2; // 随机方向
+        die.body.velocity.set(
+          Math.cos(angle) * hSpd,
+          -(5 + Math.random() * 10), // 向下 5~15
+          Math.sin(angle) * hSpd
+        );
+        
+        // 大角速度：骰子猛烈翻滚
+        const angSpd = 30 + Math.random() * 40; // 30~70
+        die.body.angularVelocity.set(
+          (Math.random()-0.5)*2*angSpd,
+          (Math.random()-0.5)*2*angSpd,
+          (Math.random()-0.5)*2*angSpd
+        );
+
+        // 向中心的额外冲力（防止飞出边界）
+        die.body.applyImpulse(
+          new CANNON.Vec3(-die.body.position.x*1.5, -15, -die.body.position.z*1.5),
+          new CANNON.Vec3(0,0,0)
+        );
       }
 
       if(window.innerWidth<=768){
